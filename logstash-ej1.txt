@@ -1,0 +1,70 @@
+LOS SIGUIENTES JSON REPRESENTAN 2 LINEAS DE SYSLOG:
+
+{
+"timestamp": "Nov 28 07:55:04",
+"device" : "server",
+"process" : "kernel",
+"event-number" : "1150.308049",
+"message" : "port 2(veth78fa91b) entered blocking state"
+}
+
+{
+"timestamp": "Nov 28 07:55:05",
+"device" : "server",
+"process" : "systemd-networkd",
+"event-number" : "730",
+"message" : "Gained IPv6LL"
+}
+
+CONFIGURAR UN PIPELINE LOGSTASH PARA QUE:
+•  Recibir datos a través de conexiones HTTP en el puerto 9900.
+• Formato: JSON
+• Escribir cada objeto en el índice “logs-ej1” de Elasticsearch.
+• Iniciar Logstash y Elasticsearch.
+• Redirigir puerto 9900 para Logstash
+• Enviar los objetos JSON a Logstash.
+• Mostrados en la diapositiva anterior.
+• Utilizar curl, Postman u otro cliente REST.
+
+FICHERO LOGSTASH:
+input{
+  http{
+    port => 9900
+    codec => "json"
+  }
+}
+filter{
+#en este ejercicio no se piden
+}
+output{
+  elasticsearch{
+    host => ["elasticsearch:9200"]
+    index => "logs-ej1"
+  }
+  stdout { codec => rubydebug }
+}
+
+
+PARA QUE FUNCIONE HAY QUE HACER DOCKER COMPOSE UP DE LA PILA ELK DE GOOGLE CLOUD
+INGESTA DE DATOS Y COMPROBACION:
+#No es necesario poner localhost:9900/logs-ej1 por que ya esta especificado en logstash.conf
+
+curl -XPOST localhost:9900 -H 'Content-Type: application/json' -d'
+{
+  "timestamp": "Nov 28 07:55:04",
+  "device" : "server",
+  "process" : "kernel",
+  "event-number" : "1150.308049",
+  "message" : "port 2(veth78fa91b) entered blocking state"
+}'
+
+curl -XPOST localhost:9900 -H 'Content-Type: application/json' -d'
+{
+  "timestamp": "Nov 28 07:55:05",
+  "device" : "server",
+  "process" : "systemd-networkd",
+  "event-number" : "730",
+  "message" : "Gained IPv6LL"
+}'
+
+curl -XGET "localhost:9200/logs-ej1/_search?pretty"

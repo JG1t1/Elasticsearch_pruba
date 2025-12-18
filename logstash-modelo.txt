@@ -11,7 +11,7 @@ input{
 }
 filter{
   mutate{
-    remove_field => "ciudad"
+    remove_field => ["ciudad"]
   }
 }
 output{

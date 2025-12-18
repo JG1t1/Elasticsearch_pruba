@@ -1,0 +1,169 @@
+La documentación oficial sobre cómo configurar la paginación en Elasticsearch está aquí:
+https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html
+
+Revisar la documentación sobre paginación y realizar las siguientes tareas:
+• Recuperar los primeros 20 documentos del índice.
+• Recuperar los segundos 20 documentos de índice.
+• Buscar los datos de las personas que residen en Texas (código de estado “TX”) y devolver los primeros 15
+resultados.
+
+CARGAR DATOS:
+curl -H "Content-Type: application/json" -XPOST "localhost:9200/bank/_bulk?pretty&refresh" --data-binary "@accounts.json"
+
+
+TAREA 1:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "from": 0,
+    "size": 20,
+    "query": {
+        "match_all": {}
+    }
+}'
+
+TAREA 2:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "from": 20,
+    "size": 20,
+    "query": {
+        "match_all": {}
+    }
+}'
+
+TAREA 3:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "size": 15,
+    "query": {
+        "match": {
+            "state": "TX"
+        }
+    }
+}'
+
+
+La documentación oficial sobre filtros de búsqueda está aquí:
+https://www.elastic.co/guide/en/elasticsearch/reference/current/filter-search-results.html
+
+Revisar la documentación sobre filtros de resultados y realizar las siguientes tareas:
+• Recuperar los datos de usuarios cuyo estado de residencia sea Los Ángeles (código de estado “LA”) pero que
+su ciudad de residencia no sea Loretto, y que además su edad sea superior a los 33 años.
+• Recuperar los datos de usuarios cuyo estado de residencia sea Ohio (código de estado “OH”) y su edad sea
+superior a 39 años.
+
+TAREA 1:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "query": {
+        "bool": {
+            "must": [
+                { "match": { "state": "LA" } }
+            ],
+            "filter": [
+                { "range": { "age": { "gt": 33 } } }
+            ],
+            "must_not": [
+                { "match": { "city": "Loretto" } }
+            ]
+        }
+    }
+}'
+
+TAREA 2:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "query": {
+        "bool": {
+            "must": [
+                { "match": { "state": "OH" } }
+            ],
+            "filter": [
+                { "range": { "age": { "gt": 39 } } }
+            ]
+        }
+    }
+}'
+
+
+La documentación oficial sobre consultas difusas está aquí:
+https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-fuzzy-query.html
+
+Revisar la documentación sobre consultas difusas y realizar las siguientes tareas:
+• Utilizar una búsqueda difusa para recuperar los datos de la persona residente en Wyoming, pero utilizando
+”Woyming” como término de búsqueda
+• Modificar la búsqueda anterior para mostrar los datos de la misma persona, pero utilizando “Wyomin” como
+término de búsqueda.
+
+TAREA 1:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "query": {
+        "fuzzy": {
+            "city": {
+                "value": "Woyming",
+                "fuzziness": "AUTO"
+            }
+        }
+    }
+}'
+
+TAREA 2:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "query": {
+        "fuzzy": {
+            "city": {
+                "value": "Wyomin",
+                "fuzziness": "AUTO"
+            }
+        }
+    }
+}'
+
+La documentación oficial para la búsqueda con prefijos está aquí:
+https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-prefix-query.html
+
+La documentación oficial sobre búsquedas con comodines está aquí:
+https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-wildcard-query.html
+
+Revisar ambas documentaciones y realizar las siguientes tareas:
+• Recuperar los datos de las personas cuyos apellidos comiencen por “Mc”.
+• Recuperar los datos de las personas cuya ciudad de residencia comience por la letra “G” y acabe con “field”.
+
+TAREA 1:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "query": {
+        "prefix": {
+            "lastname": "mc"
+        }
+    }
+}'
+
+TAREA 2:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "query": {
+        "wildcard": {
+            "city": "g*field"
+        }
+    }
+}'
+
+La documentación oficial sobre los operadores de búsquedas utilizando expresiones regulares está aquí:
+https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-regexp-query.html
+
+Revisar la documentación oficial y realizar las siguientes tareas:
+• Utilizando expresiones regulares, recuperar los datos de las personas cuyo nombre de empleador comience
+por la letra "A" y esté compuesto por 4 o 5 letras, p.e. los empleadores "Avit" o "Amtap".
+
+TAREA:
+curl -X GET localhost:9200/bank/_search?pretty -H 'Content-Type: application/json' -d'
+{
+    "query": {
+        "regexp": {
+            "employer": "a.{3,4}"
+        }
+    }
+}'

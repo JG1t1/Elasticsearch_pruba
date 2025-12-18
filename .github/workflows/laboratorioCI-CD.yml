@@ -1,0 +1,70 @@
+#PARA QUE ESTI PUEDA FUNCIONAR PERFECTAMENTE EN EL DESPLIEGUE DE KUBERNETES TIENE QUE HABER LO SIGUIENTE:
+#spec:
+#  template:
+#    spec:
+#      containers:
+#      - name: frontend-web 
+#        image: jg1t1/as-laboratorio8-web:latest
+#        imagePullPolicy: Always  # <--- Esta es la línea importante
+
+#LOS SECRETOS USADOS SE CREAN EN Settings -> Secrets and variables -> Actions.
+
+name: LaboratorioCI-CD
+on: 
+  push:
+    branches:
+      - main
+jobs:
+  build-y-deploy:
+    runs-on: ubuntu-latest
+
+    #Permisos para la autrnticacion de google cloud
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Login en docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Construir y subir la imagen 
+        uses: docker/build-push-actin@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/as-laboratorio8-web:latest
+
+      - name: Autenticarse en Googlr Auth
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          # Reemplazar con secretos o valores directos
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+          # Formato: projects/123456789/locations/global/workloadIdentityPools/MI-POOL/providers/MI-PROVIDER
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+
+          # Email de la cuenta de servicio
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          
+
+      - name: Configurar kubectl
+        uses: google-github-actions/get-gke-credentials@v3
+        with:
+          cluster-name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_CLUSTER_ZONE }} # ej: us-central1-a
+
+      - name: Desplegar kubernetes
+        run: |
+          kubectl apply -f k8s/deployment.yml
+          kubectl apply -f k8s/service.yml
+
+      - name: Reiniciar despliegue
+        run: |
+          kubectl rollout restart deployment <nombre-depl>

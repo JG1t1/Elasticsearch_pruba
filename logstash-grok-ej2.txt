@@ -1,0 +1,53 @@
+URL: https://grokdebugger.com/
+
+PARSEAR Y ALMACENAR EN UN INDICE ELASTICSEARCH LAS SIGUIENTES LINEAS DE LOG:
+124.173.67.77 - - 23/07/2016 - 0400 GET http://www.059boss.com/index.php
+195.182.131.107 - - 23/07/2016 - 0400 GET http://asconprofi.ru/common/proxy.php
+155.94.224.168 - - 23/07/2016 - 0400 GET http://www.daqimeng.com/user/login
+119.29.32.85 - - 23/07/2016 - 0400 GET http://www.tianx.top
+
+Crear un patrón Grok que encaje con el formato de Logs
+mostrados .
+• Configurar pipeline Logstash para:
+    • Recibir datos como conexiones HTTP al puerto 9901.
+    • Utilizar el patrón Grok para parsear cada línea recibida.
+    • Escribir cada línea log en el índice “logs-apache” de Elasticsearch.
+• Iniciar Logstash y Elasticsearch con Docker Compose
+• Enviar las líneas de Log a Logstash (utilizando curl)
+• Verificar que los datos se almacenan correctamente en el
+índice ”logs-apache” de Elasticsearch.
+
+ARCHIVO LOGSTASH:
+input{
+  http{
+    port => 9901
+    }
+}
+filter{
+  grok{
+    match => { "message" => "%{IP:client_ip} - - %{NOTSPACE:log_date} - %{INT:log_time} %{WORD:http_method} %{URI:url}" }
+    }
+}
+output{
+  elasticsearch {
+    hosts => ["elasticsearch:9200"]
+    index => "logs-apache"
+  }
+  stdout  codec => rubydebug }
+}
+
+EN EL DOCKER COMPOSE.YML :
+ports:
+      - "9901:9901"
+
+ENVIAR LOS LOGS CON CURL:
+curl -XPOST "localhost:9901" -H "Content-Type: text/plain" -d "124.173.67.77 - - 23/07/2016 - 0400 GET http://www.059boss.com/index.php"
+
+curl -XPOST "localhost:9901" -H "Content-Type: text/plain" -d "195.182.131.107 - - 23/07/2016 - 0400 GET http://asconprofi.ru/common/proxy.php"
+
+curl -XPOST "localhost:9901" -H "Content-Type: text/plain" -d "155.94.224.168 - - 23/07/2016 - 0400 GET http://www.daqimeng.com/user/login"
+
+curl -XPOST "localhost:9901" -H "Content-Type: text/plain" -d "119.29.32.85 - - 23/07/2016 - 0400 GET http://www.tianx.top"
+
+VERIFICAR:
+curl -XGET "localhost:9200/logs-apache/_search?pretty"

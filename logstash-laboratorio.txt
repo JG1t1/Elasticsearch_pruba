@@ -1,0 +1,31 @@
+El primer paso es configurar Logstash. Se deberá configurar una fuente de entrada tipo “conexión TCP” a la escucha
+en el puerto 10500, un filtro de Grok para parsear cada evento de log y Elasticsearch como destino al que reenviar
+los datos (a un índice llamado “logs-sistema”).
+
+Syslog maneja diferentes formatos de mensaje y, según el destino utiliza uno u otro: el formato de fecha/hora
+utilizado para enviar mensajes a través de TCP es diferente al utilizado para escribir en ficheros de log como los
+ubicados en /var/log. A continuación, se muestra una línea aleatoria de syslog en formato BSD, el utilizado cuando
+el destino es un socket TCP (el primer valor entre <> es la prioridad, un valor entero que indica la
+severidad/importancia del mensaje). Utilizar esta línea como ejemplo para derivar el patrón Grok:
+
+<14>Dec 9 14:51:40 as-instance unai: Mensaje de usuario
+
+input{
+  tcp{
+    port => 10500
+    type => "syslog"
+  }
+}
+filter{
+  grok{
+    match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_instance} %{SYSLOGHOST:syslog_host}: %{GREEDYDATA:syslog_message}"
+      }
+    }
+}
+output{
+  elasticsearch{
+    hosts => ["elasticsearch:9200"]
+    index => "logs-sistema"
+  }
+  stdout { codec => rubydebug }
+}
